@@ -49,7 +49,8 @@ export class UserService {
     );
     if (
       visited &&
-      visited.timestamp - Date.now() > +process.env.DELAY_NEW_NOTIFICATION!
+      visited.timestamp - Date.now() >
+        +process.env.DELAY_NEW_NOTIFICATION! * 1000
     )
       result = false;
     return result;
