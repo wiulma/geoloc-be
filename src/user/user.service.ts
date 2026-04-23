@@ -53,6 +53,7 @@ export class UserService {
         +process.env.DELAY_NEW_NOTIFICATION! * 1000
     )
       result = false;
+    console.log('needToNotifyPoi', result);
     return result;
   }
 }

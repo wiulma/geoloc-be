@@ -31,10 +31,10 @@ export class LocationsController {
   @Post('check-poi')
   async checkPoi(@Body() body: CheckPoiRequestDto) {
     const { poiId, latitude, longitude, userId } = body;
-
+    console.log('check-poi', body);
     const poi = await this.locationsService.findById(poiId);
     if (!poi) return { ok: false };
-    const distance = this.locationsService.checkPoi(userId, poi, {
+    const distance = await this.locationsService.checkPoi(userId, poi, {
       latitude,
       longitude,
     });

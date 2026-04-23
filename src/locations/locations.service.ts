@@ -8,7 +8,7 @@ import { FAKE_POIS } from './locations.data';
 @Injectable()
 export class LocationsService {
   private readonly NEARBY_RADIUS_METERS = 200;
-  readonly GEOFENCE_RADIUS_METERS = 30;
+  readonly GEOFENCE_RADIUS_METERS = 300; // 50
 
   constructor(
     private loggingService: LoggingService,
@@ -98,13 +98,17 @@ export class LocationsService {
       poiLatitude,
       poiLongitude,
     );
-
-    if (distance <= 30) {
+    console.log('checkPoi distance', distance, this.GEOFENCE_RADIUS_METERS);
+    if (
+      distance <= this.GEOFENCE_RADIUS_METERS &&
+      (await this.userService.needToNotifyPoi(userId, poi.id))
+    ) {
       const data = {
         title: poi.title,
         lat: poiLatitude,
         lon: poiLongitude,
       };
+
       this.loggingService.sendMessage(
         userId,
         'location',
@@ -122,16 +126,15 @@ export class LocationsService {
           poiId: poi.id.toString(),
         },
       };
-      if (await this.userService.needToNotifyPoi(userId, poi.id)) {
-        this.notificationService
-          .send(userId, msgData)
-          .then(() => this.userService.savePoiNotification(userId, poi.id))
-          .catch((exc) =>
-            console.log(
-              `Error sending checkPoi: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
-            ),
-          );
-      }
+
+      this.notificationService
+        .send(userId, msgData)
+        .then(() => this.userService.savePoiNotification(userId, poi.id))
+        .catch((exc) =>
+          console.log(
+            `Error sending checkPoi: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
+          ),
+        );
     }
     return distance;
   }
