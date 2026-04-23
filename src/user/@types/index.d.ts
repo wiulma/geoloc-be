@@ -1,0 +1,3 @@
+type RegisterUserTokenDto = {
+  token: string;
+};

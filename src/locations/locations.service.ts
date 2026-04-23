@@ -1,46 +1,138 @@
+import { LoggingService } from './../services/logging.service';
 import { Injectable } from '@nestjs/common';
-import { GetDataLocationResponseDto } from './dto/get-data-location-response.dto';
 
-const FAKE_DATA = [
-  {
-    location: {
-      coords: {
-        latitude: 45.436324,
-        longitude: 12.206216,
-      },
-    },
-    title: 'Malcontenta raccolta',
-    message: 'Malcontenta raccolta',
-    imageUrl: 'https://placehold.co/600x400',
-  },
-  {
-    location: {
-      coords: {
-        latitude: 45.436493,
-        longitude: 12.205095,
-      },
-    },
-    title: 'Malcontenta chiesa',
-    message: 'Malcontenta chiesa',
-    imageUrl: 'https://placehold.co/600x400',
-  },
-  {
-    location: {
-      coords: {
-        latitude: 45.437131,
-        longitude: 12.205028,
-      },
-    },
-    title: 'Malcontenta Ferramenta',
-    message: 'Malcontenta Ferramenta',
-    imageUrl: 'https://placehold.co/600x400',
-  },
-];
+import { NotificationService } from '../services/notification.service';
+import { UserService } from '../user/user.service';
+import { FAKE_POIS } from './locations.data';
 
 @Injectable()
 export class LocationsService {
-  async getData() /*data: GetDataLocationDto,*/
-  : Promise<GetDataLocationResponseDto[]> {
-    return Promise.resolve(FAKE_DATA);
+  private readonly NEARBY_RADIUS_METERS = 200;
+  readonly GEOFENCE_RADIUS_METERS = 30;
+
+  constructor(
+    private loggingService: LoggingService,
+    private notificationService: NotificationService,
+    private userService: UserService,
+  ) {}
+
+  async getAll(): Promise<LocationData[]> {
+    return Promise.resolve(FAKE_POIS);
+  }
+  /*
+  async getData(data: GetDataLocationDto): Promise<GetPoiDataResponseDto> {
+    const { latitude, longitude } = data.coords;
+    console.log(
+      `search by request coords. lat: ${latitude}, lon: ${longitude}`,
+    );
+    // return Promise.resolve(FAKE_DATA);
+
+    const nearbyPOIs = FAKE_DATA.filter((poi: LocationData) => {
+      const dist = this.getDistanceMeters(
+        latitude,
+        longitude,
+        poi.coords.latitude,
+        poi.coords.longitude,
+      );
+      return dist <= this.GEOFENCE_RADIUS_METERS;
+    });
+
+    if (nearbyPOIs.length > 0) {
+      const userToken = (await this.userService.findOne(data.userId))?.fcm;
+      if (userToken) {
+        for (const poi of nearbyPOIs) {
+          await this.notificationService.sendPush(userToken, poi);
+        }
+      }
+    }
+
+    return { found: nearbyPOIs.length };
+  }
+*/
+  toRad = (x: number) => (x * Math.PI) / 180;
+
+  getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371000; // meters
+
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  async getNearby(lat: number, lng: number): Promise<NearbyLocationData[]> {
+    //FIXME: select by spatial query filter
+    const pois: LocationData[] = await this.getAll();
+    const result = pois
+      .map((p) => ({
+        ...p,
+        distance: this.getDistanceMeters(
+          lat,
+          lng,
+          p.coords.latitude,
+          p.coords.longitude,
+        ),
+      }))
+      .filter((p) => p.distance < this.NEARBY_RADIUS_METERS)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 50);
+    console.log('getNearby', lat, lng, result);
+    return result;
+  }
+
+  findById(id: number) {
+    return Promise.resolve(FAKE_POIS.find((elm) => elm.id === id));
+  }
+
+  async checkPoi(userId: number = 1, poi: LocationData, targetCoords: Coords) {
+    const { latitude, longitude } = targetCoords;
+    const { latitude: poiLatitude, longitude: poiLongitude } = poi.coords;
+    const distance = this.getDistanceMeters(
+      latitude,
+      longitude,
+      poiLatitude,
+      poiLongitude,
+    );
+
+    if (distance <= 30) {
+      const data = {
+        title: poi.title,
+        lat: poiLatitude,
+        lon: poiLongitude,
+      };
+      this.loggingService.sendMessage(
+        userId,
+        'location',
+        'Send checked POI',
+        data,
+      );
+
+      const msgData = {
+        notification: {
+          title: poi.title,
+          body: poi.message,
+        },
+        data: {
+          image: poi.imageUrl,
+          poiId: poi.id.toString(),
+        },
+      };
+      if (await this.userService.needToNotifyPoi(userId, poi.id)) {
+        this.notificationService
+          .send(userId, msgData)
+          .then(() => this.userService.savePoiNotification(userId, poi.id))
+          .catch((exc) =>
+            console.log(
+              `Error sending checkPoi: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
+            ),
+          );
+      }
+    }
+    return distance;
   }
 }
