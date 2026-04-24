@@ -4,6 +4,6 @@ import { CreateClientLogDto } from './dto/create-client-log.dto';
 @Injectable()
 export class ClientLogService {
   create(createClientLogDto: CreateClientLogDto) {
-    console.log(createClientLogDto);
+    console.log('client-message', createClientLogDto);
   }
 }

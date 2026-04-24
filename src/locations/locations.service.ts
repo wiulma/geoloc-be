@@ -7,7 +7,7 @@ import { FAKE_POIS } from './locations.data';
 
 @Injectable()
 export class LocationsService {
-  private readonly NEARBY_RADIUS_METERS = 200;
+  private readonly NEARBY_RADIUS_METERS = 1000;
   readonly GEOFENCE_RADIUS_METERS = 300; // 50
 
   constructor(
