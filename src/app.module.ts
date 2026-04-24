@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import AppConfig from './config/AppConfig';
 import { validationSchema } from './config/validation.schema';
+import { ClientLogModule } from './client-log/client-log.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { validationSchema } from './config/validation.schema';
     }),
     LocationsModule,
     UserModule,
+    ClientLogModule,
   ],
   controllers: [AppController],
   providers: [AppService],
