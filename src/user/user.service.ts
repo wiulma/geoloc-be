@@ -1,13 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../services/storage.service';
+import { NotificationService } from '../services/notification.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
-  registerToken(userId: number, data: RegisterUserTokenDto) {
-    const user = this.storageService.update({ userId, fcm: data.token });
-    return user;
+  async registerToken(
+    userId: number,
+    data: RegisterUserTokenDto,
+  ): Promise<User> {
+    const user = await this.findOne(userId);
+    let result: User;
+    if (user) {
+      result = this.storageService.update({ userId, fcm: data.token });
+    } else {
+      result = this.storageService.add({ userId, fcm: data.token });
+    }
+    return result;
   }
 
   findAll() {
@@ -16,6 +29,10 @@ export class UserService {
 
   findOne(id: number) {
     return Promise.resolve(this.storageService.getById(id));
+  }
+
+  add(user: User) {
+    return this.storageService.add(user);
   }
 
   update(data: User) {
@@ -44,16 +61,39 @@ export class UserService {
   async needToNotifyPoi(userId: number, idPoi: number) {
     let result = true;
     const user = await this.findOne(userId);
+    console.log('user to notify', user);
     const visited = user?.poiNotification?.find(
       (elm: PoiNotificationData) => elm.idPoi === idPoi,
     );
+    console.log('poi last visited', visited);
     if (
       visited &&
-      visited.timestamp - Date.now() >
-        +process.env.DELAY_NEW_NOTIFICATION! * 1000
+      visited.timestamp - Date.now() <
+        +(process.env.DELAY_NEW_NOTIFICATION ?? 120000)
     )
       result = false;
     console.log('needToNotifyPoi', result);
     return result;
+  }
+
+  async sendNotification(userId: number) {
+    const user = await this.findOne(userId);
+    if (!user) {
+      throw new Error('Invalid user');
+    }
+    const location = {
+      id: 1,
+      coords: {
+        longitude: 12.22509,
+        latitude: 45.471339,
+      },
+      title: 'Via Marghera 1, Marghera',
+      message: 'Via Marghera 1, Marghera',
+      imageUrl:
+        'https://maps.wikimedia.org/img/osm-intl,14,45.471339,12.225090,500x300.png',
+    };
+    this.notificationService.sendPush(user?.fcm, location).catch((err) => {
+      throw new Error(err);
+    });
   }
 }

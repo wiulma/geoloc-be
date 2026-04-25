@@ -98,7 +98,12 @@ export class LocationsService {
       poiLatitude,
       poiLongitude,
     );
-    console.log('checkPoi distance', distance, this.GEOFENCE_RADIUS_METERS);
+    console.log(
+      'checkPoi distance',
+      distance,
+      this.GEOFENCE_RADIUS_METERS,
+      distance <= this.GEOFENCE_RADIUS_METERS,
+    );
     if (
       distance <= this.GEOFENCE_RADIUS_METERS &&
       (await this.userService.needToNotifyPoi(userId, poi.id))
@@ -115,6 +120,7 @@ export class LocationsService {
         'Send checked POI',
         data,
       );
+      console.log('send message by firebase', userId, data);
 
       const msgData = {
         notification: {
@@ -127,8 +133,13 @@ export class LocationsService {
         },
       };
 
+      console.log('msgData', msgData);
+
+      const user = await this.userService.findOne(userId);
+      if (!user) throw new Error(`Invalid user: ${userId}`);
+
       this.notificationService
-        .send(userId, msgData)
+        .send(user.fcm, msgData)
         .then(() => this.userService.savePoiNotification(userId, poi.id))
         .catch((exc) =>
           console.log(

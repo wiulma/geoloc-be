@@ -1,15 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { BaseMessage } from 'firebase-admin/messaging';
-import { UserService } from '../user/user.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NotificationService {
-  constructor(
-    private readonly userService: UserService,
-    private configService: ConfigService,
-  ) {}
+  constructor(private configService: ConfigService) {}
   setupFirebase(): void {
     try {
       admin.initializeApp({
@@ -26,15 +22,9 @@ export class NotificationService {
     }
   }
 
-  async send(userId: number, msg: BaseMessage) {
-    const user = await this.userService.findOne(userId);
-    if (!user) {
-      console.log(`Invalid user: ${userId}`);
-      return;
-    }
-    const token = user.fcm;
+  async send(token: string, msg: BaseMessage) {
     if (!token) {
-      console.log(`Invalid user token, user: ${userId}`);
+      console.log(`Invalid user token, user`);
       return;
     }
     return admin
@@ -47,10 +37,10 @@ export class NotificationService {
       );
   }
 
-  /*
-    async sendPush(token: string, poi: LocationData) {
+  async sendPush(token: string, poi: LocationData) {
     try {
-      await admin.messaging().send({
+      console.log('try send message', token, poi);
+      const res = await admin.messaging().send({
         token,
         notification: {
           title: poi.title,
@@ -61,24 +51,13 @@ export class NotificationService {
           poiId: poi.id.toString(),
         },
       });
+
+      console.log('Result send notification', res);
     } catch (exc) {
-      console.log(
-        `Error sending message: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
+      console.error(
+        'Error sending firebase notification',
+        (exc as Error).message,
       );
     }
-  }
-  */
-  async sendPush(token: string, poi: LocationData) {
-    await admin.messaging().send({
-      token,
-      notification: {
-        title: poi.title,
-        body: poi.message,
-      },
-      data: {
-        image: poi.imageUrl,
-        poiId: poi.id.toString(),
-      },
-    });
   }
 }
