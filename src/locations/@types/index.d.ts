@@ -7,6 +7,7 @@ type CheckPoiRequestDto = {
   poiId: number;
   latitude: number;
   longitude: number;
+  lastLocalNotification?: number;
 };
 
 type Coords = {

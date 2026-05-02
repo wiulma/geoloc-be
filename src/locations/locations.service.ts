@@ -4,16 +4,15 @@ import { Injectable } from '@nestjs/common';
 import { NotificationService } from '../services/notification.service';
 import { UserService } from '../user/user.service';
 import { FAKE_POIS } from './locations.data';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class LocationsService {
-  private readonly NEARBY_RADIUS_METERS = 1000;
-  readonly GEOFENCE_RADIUS_METERS = 300; // 50
-
   constructor(
     private loggingService: LoggingService,
     private notificationService: NotificationService,
     private userService: UserService,
+    private configService: ConfigService,
   ) {}
 
   async getAll(): Promise<LocationData[]> {
@@ -78,7 +77,9 @@ export class LocationsService {
           p.coords.longitude,
         ),
       }))
-      .filter((p) => p.distance < this.NEARBY_RADIUS_METERS)
+      .filter(
+        (p) => p.distance < this.configService.get('NEARBY_RADIUS_METERS'),
+      )
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 50);
     console.log('getNearby', lat, lng, result);
@@ -89,7 +90,12 @@ export class LocationsService {
     return Promise.resolve(FAKE_POIS.find((elm) => elm.id === id));
   }
 
-  async checkPoi(userId: number = 1, poi: LocationData, targetCoords: Coords) {
+  async checkPoi(
+    userId: number = 1,
+    poi: LocationData,
+    targetCoords: Coords,
+    lastLocalNotification?: number,
+  ) {
     const { latitude, longitude } = targetCoords;
     const { latitude: poiLatitude, longitude: poiLongitude } = poi.coords;
     const distance = this.getDistanceMeters(
@@ -101,12 +107,16 @@ export class LocationsService {
     console.log(
       'checkPoi distance',
       distance,
-      this.GEOFENCE_RADIUS_METERS,
-      distance <= this.GEOFENCE_RADIUS_METERS,
+      this.configService.get('GEOFENCE_RADIUS_METERS'),
+      distance <= this.configService.get('GEOFENCE_RADIUS_METERS'),
     );
     if (
-      distance <= this.GEOFENCE_RADIUS_METERS &&
-      (await this.userService.needToNotifyPoi(userId, poi.id))
+      distance <= this.configService.get('GEOFENCE_RADIUS_METERS') &&
+      (await this.userService.needToNotifyPoi(
+        userId,
+        poi.id,
+        lastLocalNotification,
+      ))
     ) {
       const data = {
         title: poi.title,
@@ -128,7 +138,6 @@ export class LocationsService {
           body: poi.message,
         },
         data: {
-          image: poi.imageUrl,
           poiId: poi.id.toString(),
         },
       };
@@ -137,15 +146,16 @@ export class LocationsService {
 
       const user = await this.userService.findOne(userId);
       if (!user) throw new Error(`Invalid user: ${userId}`);
-
-      this.notificationService
-        .send(user.fcm, msgData)
-        .then(() => this.userService.savePoiNotification(userId, poi.id))
-        .catch((exc) =>
-          console.log(
-            `Error sending checkPoi: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
-          ),
-        );
+      if (this.notificationService.shouldSend(userId, poi.id)) {
+        this.notificationService
+          .send(user.fcm, msgData)
+          .then(() => this.userService.savePoiNotification(userId, poi.id))
+          .catch((exc) =>
+            console.log(
+              `Error sending checkPoi: ${JSON.stringify(poi)}, exc: ${(exc as Error).message}`,
+            ),
+          );
+      }
     }
     return distance;
   }

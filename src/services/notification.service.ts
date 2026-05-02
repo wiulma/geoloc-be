@@ -5,21 +5,34 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NotificationService {
+  sentNotifications = new Map<string, number>();
   constructor(private configService: ConfigService) {}
   setupFirebase(): void {
-    try {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: this.configService.get('FB_PROJECT_ID'),
-          clientEmail: this.configService.get('FB_CLIENT_EMAIL'),
-          privateKey: this.configService
-            .get('FB_PRIVATE_KEY')
-            .replace(/\\n/g, '\n'),
-        }),
-      });
-    } catch (exc) {
-      throw new Error(exc);
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: this.configService.get('FB_PROJECT_ID'),
+        clientEmail: this.configService.get('FB_CLIENT_EMAIL'),
+        privateKey: this.configService
+          .get('FB_PRIVATE_KEY')
+          .replace(/\\n/g, '\n'),
+      }),
+    });
+  }
+
+  shouldSend(userId: number, poiId: number) {
+    const key = `${userId}_${poiId}`;
+    const now = Date.now();
+    const last = this.sentNotifications.get(key);
+
+    if (
+      !last ||
+      now - last > this.configService.get('DELAY_NEW_NOTIFICATION')
+    ) {
+      this.sentNotifications.set(key, now);
+      return true;
     }
+
+    return false;
   }
 
   async send(token: string, msg: BaseMessage) {
@@ -29,7 +42,18 @@ export class NotificationService {
     }
     return admin
       .messaging()
-      .send({ token, ...msg })
+      .send({
+        token,
+        ...msg,
+        android: {
+          collapseKey: `fntf_${Date.now()}`, // unique
+        },
+        apns: {
+          headers: {
+            'apns-collapse-id': `fntf_${Date.now()}`,
+          },
+        },
+      })
       .catch((exc) =>
         console.log(
           `Error sending message: ${JSON.stringify(msg)}, exc: ${(exc as Error).message}`,
@@ -49,6 +73,14 @@ export class NotificationService {
         data: {
           image: poi.imageUrl,
           poiId: poi.id.toString(),
+        },
+        android: {
+          collapseKey: `poi_${poi.id}_${Date.now()}`, // unique
+        },
+        apns: {
+          headers: {
+            'apns-collapse-id': `poi_${poi.id}_${Date.now()}`,
+          },
         },
       });
 

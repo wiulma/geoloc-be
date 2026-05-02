@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../services/storage.service';
 import { NotificationService } from '../services/notification.service';
@@ -7,6 +8,7 @@ export class UserService {
   constructor(
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
+    private readonly configService: ConfigService,
   ) {}
 
   async registerToken(
@@ -58,7 +60,11 @@ export class UserService {
     }
   }
 
-  async needToNotifyPoi(userId: number, idPoi: number) {
+  async needToNotifyPoi(
+    userId: number,
+    idPoi: number,
+    lastLocalNotification?: number,
+  ) {
     let result = true;
     const user = await this.findOne(userId);
     console.log('user to notify', user);
@@ -66,10 +72,13 @@ export class UserService {
       (elm: PoiNotificationData) => elm.idPoi === idPoi,
     );
     console.log('poi last visited', visited);
+
     if (
-      visited &&
-      visited.timestamp - Date.now() <
-        +(process.env.DELAY_NEW_NOTIFICATION ?? 120000)
+      (visited &&
+        visited.timestamp - Date.now() <
+          this.configService.get('DELAY_NEW_NOTIFICATION')) ||
+      (lastLocalNotification ?? Number.MAX_VALUE) - Date.now() <
+        this.configService.get('DELAY_NEW_NOTIFICATION')
     )
       result = false;
     console.log('needToNotifyPoi', result);
@@ -93,7 +102,7 @@ export class UserService {
         'https://maps.wikimedia.org/img/osm-intl,14,45.471339,12.225090,500x300.png',
     };
     this.notificationService.sendPush(user?.fcm, location).catch((err) => {
-      throw new Error(err);
+      throw err;
     });
   }
 }

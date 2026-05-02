@@ -34,10 +34,15 @@ export class LocationsController {
     console.log('check-poi', body);
     const poi = await this.locationsService.findById(poiId);
     if (!poi) return { ok: false };
-    const distance = await this.locationsService.checkPoi(userId, poi, {
-      latitude,
-      longitude,
-    });
+    const distance = await this.locationsService.checkPoi(
+      userId,
+      poi,
+      {
+        latitude,
+        longitude,
+      },
+      body.lastLocalNotification,
+    );
 
     return { ok: !!distance, distance };
   }
