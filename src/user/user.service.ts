@@ -72,6 +72,32 @@ export class UserService {
       (elm: PoiNotificationData) => elm.idPoi === idPoi,
     );
     console.log('poi last visited', visited);
+    console.log(
+      'visited check',
+      'visited timestap',
+      visited?.timestamp ?? 'NEVER',
+      'now',
+      Date.now(),
+      'config DELAY_NEW_NOTIFICATION',
+      this.configService.get('DELAY_NEW_NOTIFICATION'),
+      'result',
+      visited &&
+        visited.timestamp - Date.now() <
+          this.configService.get('DELAY_NEW_NOTIFICATION'),
+    );
+    console.log(
+      'last local notification check',
+      'lastLocalNotification',
+      lastLocalNotification,
+      'max',
+      Number.MAX_VALUE,
+      'config DELAY_NEW_NOTIFICATION',
+      this.configService.get('DELAY_NEW_NOTIFICATION'),
+      'result',
+      this.configService.get('DELAY_NEW_NOTIFICATION'),
+      (lastLocalNotification ?? Number.MAX_VALUE) - Date.now() <
+        this.configService.get('DELAY_NEW_NOTIFICATION'),
+    );
 
     if (
       (visited &&

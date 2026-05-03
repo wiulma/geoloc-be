@@ -24,6 +24,25 @@ export class NotificationService {
     const now = Date.now();
     const last = this.sentNotifications.get(key);
 
+    console.log(
+      'notification service should send',
+      key,
+      now,
+      'last',
+      last,
+      'config DELAY_NEW_NOTIFICATION',
+      this.configService.get('DELAY_NEW_NOTIFICATION'),
+    );
+    console.log(
+      'result check',
+      'last',
+      last ?? 'never',
+      'now-last',
+      now - (last ?? 0),
+      'check',
+      !last || now - last > this.configService.get('DELAY_NEW_NOTIFICATION'),
+    );
+
     if (
       !last ||
       now - last > this.configService.get('DELAY_NEW_NOTIFICATION')
