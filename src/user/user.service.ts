@@ -19,8 +19,10 @@ export class UserService {
     let result: User;
     if (user) {
       result = this.storageService.update({ userId, fcm: data.token });
+      console.log('update user', userId, result);
     } else {
       result = this.storageService.add({ userId, fcm: data.token });
+      console.log('create user', userId, result);
     }
     return result;
   }
