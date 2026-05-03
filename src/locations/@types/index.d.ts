@@ -31,3 +31,7 @@ type LocationData = {
 type NearbyLocationData = LocationData & {
   distance: number;
 };
+
+type LocationConfig = {
+  nearbyDistanceMeters: number;
+};

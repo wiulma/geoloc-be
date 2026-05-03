@@ -1,9 +1,13 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { LocationsService } from './locations.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('location')
 export class LocationsController {
-  constructor(private readonly locationsService: LocationsService) {}
+  constructor(
+    private readonly locationsService: LocationsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /*
   @Post()
@@ -50,5 +54,13 @@ export class LocationsController {
   @Get()
   getAll() {
     return this.locationsService.getAll();
+  }
+
+  @Get('config')
+  getConfig(): LocationConfig {
+    return {
+      nearbyDistanceMeters:
+        this.configService.get('NEARBY_RADIUS_METERS') ?? 500,
+    };
   }
 }
