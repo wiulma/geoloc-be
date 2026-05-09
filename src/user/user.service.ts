@@ -2,6 +2,9 @@ import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 import { StorageService } from '../services/storage.service';
 import { NotificationService } from '../services/notification.service';
+import { type User } from '../dto/User.dto';
+import { type PoiNotificationData } from '../dto/PoiNotificationData.dto';
+import { type RegisterUserTokenDto } from './dto/RegisterUserTokenDto.dto';
 
 @Injectable()
 export class UserService {

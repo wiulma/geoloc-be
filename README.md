@@ -43,3 +43,11 @@ deployment on
 ```
 https://dashboard.render.com/
 ```
+
+## Swagger
+
+open this url
+
+```
+http://localhost:3000/api
+```

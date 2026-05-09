@@ -5,6 +5,9 @@ import { NotificationService } from '../services/notification.service';
 import { UserService } from '../user/user.service';
 import { FAKE_POIS } from './locations.data';
 import { ConfigService } from '@nestjs/config';
+import { type LocationData } from './dto/LocationData.dto';
+import { type NearbyLocationData } from './dto/NearbyLocationData.dto';
+import { type Coords } from './dto/Coords.dto';
 
 @Injectable()
 export class LocationsService {
@@ -18,36 +21,6 @@ export class LocationsService {
   async getAll(): Promise<LocationData[]> {
     return Promise.resolve(FAKE_POIS);
   }
-  /*
-  async getData(data: GetDataLocationDto): Promise<GetPoiDataResponseDto> {
-    const { latitude, longitude } = data.coords;
-    console.log(
-      `search by request coords. lat: ${latitude}, lon: ${longitude}`,
-    );
-    // return Promise.resolve(FAKE_DATA);
-
-    const nearbyPOIs = FAKE_DATA.filter((poi: LocationData) => {
-      const dist = this.getDistanceMeters(
-        latitude,
-        longitude,
-        poi.coords.latitude,
-        poi.coords.longitude,
-      );
-      return dist <= this.GEOFENCE_RADIUS_METERS;
-    });
-
-    if (nearbyPOIs.length > 0) {
-      const userToken = (await this.userService.findOne(data.userId))?.fcm;
-      if (userToken) {
-        for (const poi of nearbyPOIs) {
-          await this.notificationService.sendPush(userToken, poi);
-        }
-      }
-    }
-
-    return { found: nearbyPOIs.length };
-  }
-*/
   toRad = (x: number) => (x * Math.PI) / 180;
 
   getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {

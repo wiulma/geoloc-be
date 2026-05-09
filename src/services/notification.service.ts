@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { BaseMessage } from 'firebase-admin/messaging';
 import { ConfigService } from '@nestjs/config';
+import { type LocationData } from '../locations/dto/LocationData.dto';
 
 @Injectable()
 export class NotificationService {

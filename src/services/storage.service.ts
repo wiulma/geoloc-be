@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fsync from 'node:fs';
 import path from 'node:path';
+import { type User } from '../dto/User.dto';
 
 @Injectable()
 export class StorageService {

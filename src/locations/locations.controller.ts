@@ -1,7 +1,12 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { ConfigService } from '@nestjs/config';
+import { Coords } from './dto/Coords.dto';
+import { CheckPoiRequestDto } from './dto/CheckPoiRequestDto.dto';
+import { type LocationConfig } from './dto/LocationConfig.dto';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Location')
 @Controller('location')
 export class LocationsController {
   constructor(
@@ -9,30 +14,15 @@ export class LocationsController {
     private readonly configService: ConfigService,
   ) {}
 
-  /*
-  @Post()
-  async getData(
-    @Body() dataDto: GetDataLocationDto,
-  ): Promise<GetPoiDataResponseDto> {
-    console.log('request params', dataDto);
-    const result = await this.locationsService.getData(dataDto);
-    Sentry.withScope((scope) => {
-      scope.setTag('module', 'location');
-      scope.setUser({ id: '123' });
-      scope.setExtra('payload', dataDto);
-
-      Sentry.captureMessage(`Getting location data: ${JSON.stringify(result)}`);
-    });
-    return result;
-  }
-*/
   @Post('nearby-pois')
+  @ApiBody({ type: Coords })
   getNearby(@Body() body: Coords) {
     const { latitude, longitude } = body;
     return this.locationsService.getNearby(latitude, longitude);
   }
 
   @Post('check-poi')
+  @ApiBody({ type: CheckPoiRequestDto })
   async checkPoi(@Body() body: CheckPoiRequestDto) {
     const { poiId, latitude, longitude, userId } = body;
     console.log('check-poi', body);
