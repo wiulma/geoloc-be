@@ -103,9 +103,9 @@ export class UserService {
 
     if (
       (visited &&
-        visited.timestamp - Date.now() <
+        Date.now() - visited.timestamp <
           this.configService.get('DELAY_NEW_NOTIFICATION')) ||
-      (lastLocalNotification ?? Number.MAX_VALUE) - Date.now() <
+      Date.now() - (lastLocalNotification ?? Number.MAX_VALUE) <
         this.configService.get('DELAY_NEW_NOTIFICATION')
     )
       result = false;
